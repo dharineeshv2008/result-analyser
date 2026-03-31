@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    /* 1. Background */
+    body {
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        min-height: 100vh;
+        margin: 0;
+    }
+    
+    /* 7. Stylish Logo text gradient effect */
+    .nav-brand {
+        background: linear-gradient(45deg, #7f00ff, #e100ff, #00d289) !important;
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        color: transparent !important;
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    /* 2. Login Card */
+    .premium-card {
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        padding: 3.5rem 2.5rem;
+        animation: fadeInData 0.8s ease-out;
+        transition: transform 0.3s ease;
+        max-width: 420px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .premium-card:hover {
+        transform: translateY(-5px);
+    }
+
+    /* 3. Input Fields */
+    .premium-input {
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #fff;
+        padding: 0.9rem 1.2rem;
+        width: 100%;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .premium-input:focus {
+        outline: none;
+        border-color: #7f00ff;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 15px rgba(127, 0, 255, 0.3);
+    }
+    
+    .premium-input::placeholder {
+        color: rgba(255,255,255,0.4);
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .premium-input:focus::placeholder {
+        transform: translateX(10px);
+        opacity: 0;
+    }
+
+    /* 4. Button */
+    .premium-btn {
+        background: linear-gradient(45deg, #7f00ff, #e100ff);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 700;
+        font-size: 1.05rem;
+        padding: 1rem;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(127, 0, 255, 0.3);
+    }
+
+    .premium-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 25px rgba(225, 0, 255, 0.5);
+    }
+
+    /* 5. Animations */
+    @keyframes fadeInData {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 6. Error Message Override */
+    .flash-error {
+        background: rgba(255, 77, 79, 0.15) !important;
+        border: 1px solid rgba(255, 77, 79, 0.4) !important;
+        border-radius: 12px !important;
+        color: #ff8e8f !important;
+        box-shadow: 0 5px 15px rgba(255, 77, 79, 0.2);
+        animation: slideIn 0.3s ease-out;
+    }
+    .flash-error::before {
+        content: "⚠️ ";
+        margin-right: 5px;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .subtitle-text {
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 2.5rem;
+    }
+</style>
+
+<div class="auth-wrapper" style="min-height: calc(100vh - 100px); display: flex; align-items: center; justify-content: center;">
+    <div class="premium-card">
+        <h2 class="text-center" style="font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(90deg, #fff, #ebdff7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">Sign In</h2>
+        <p class="text-center subtitle-text">Access your professional dashboard</p>
+        
+        <form action="{{ url_for('login') }}" method="POST" class="auth-form">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="email" style="color: #ebdff7; font-size: 0.9rem; margin-bottom: 0.5rem; display: block;">Email Address</label>
+                <input type="email" id="email" name="email" class="premium-input" required placeholder="name@company.com">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="password" style="color: #ebdff7; font-size: 0.9rem; margin-bottom: 0.5rem; display: block;">Secure Password</label>
+                <input type="password" id="password" name="password" class="premium-input" required placeholder="Enter your password">
+            </div>
+            
+            <button type="submit" class="premium-btn">Sign In to Dashboard</button>
+        </form>
+        
+        <p class="auth-footer text-center" style="margin-top: 2rem; font-size: 0.95rem;">
+            New to the platform? <a href="{{ url_for('register') }}" style="color: #e100ff; text-decoration: none; font-weight: 600;">Create an account</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

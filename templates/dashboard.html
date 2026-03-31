@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard-wrapper fade-in">
+    {% if not record %}
+        <div class="header-section text-center mb-4">
+            <h2>Process Student Batches</h2>
+            <p class="subtitle mt-2">Upload a well-formatted Excel document containing exam marks to instantly generate advanced metrics and analytics.</p>
+        </div>
+        
+        <!-- Upload Card -->
+        <div class="upload-card glass" style="max-width: 600px; margin: 0 auto;">
+            <form action="{{ url_for('process') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+                <div class="file-drop-area" id="drop-area">
+                    <span class="file-msg">Drag & Drop .xlsx file here or</span>
+                    <input type="file" name="file" id="file" class="file-input" accept=".xlsx" required>
+                    <label for="file" class="btn btn-secondary mt-2">Browse File</label>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3 w-100" style="padding: 1rem; font-size: 1.1rem;">Process Data</button>
+            </form>
+            <div class="mt-4 text-center">
+                <small style="color:var(--text-muted)">Requires columns: Name, Register Number / Roll No, Tamil, English, Maths, Science, Social Science.</small>
+            </div>
+        </div>
+
+        <script>
+            // Simple drag and drop specific to upload form
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file');
+            const fileMsg = document.querySelector('.file-msg');
+            if (dropArea) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropArea.addEventListener(e, preventDefaults, false));
+                function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+                ['dragenter', 'dragover'].forEach(e => dropArea.addEventListener(e, () => dropArea.classList.add('highlight'), false));
+                ['dragleave', 'drop'].forEach(e => dropArea.addEventListener(e, () => dropArea.classList.remove('highlight'), false));
+                dropArea.addEventListener('drop', (e) => {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileName();
+                }, false);
+                fileInput.addEventListener('change', updateFileName);
+                function updateFileName() {
+                    if(fileInput.files.length > 0) {
+                        fileMsg.textContent = "Selected: " + fileInput.files[0].name;
+                        dropArea.classList.add('has-file');
+                    } else {
+                        fileMsg.textContent = "Drag & Drop .xlsx file here or";
+                        dropArea.classList.remove('has-file');
+                    }
+                }
+            }
+        </script>
+    {% else %}
+        <!-- Dashboard Display Mode -->
+        <div id="pdf-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <h2>Data Report: {{ record.info.filename }}</h2>
+                    <p class="subtitle" style="margin-bottom: 0;">Processed on {{ record.info.created_at[:10] }}</p>
+                </div>
+                <div class="action-buttons no-pdf" style="display: flex; gap: 10px;">
+                    <button onclick="downloadPDF()" class="btn btn-secondary">⎙ Download PDF</button>
+                    <a href="{{ url_for('export_excel', record_id=record.info.id) }}" class="btn btn-primary">⬇ Export Excel</a>
+                </div>
+            </div>
+
+            <!-- Analytics Top Row -->
+            <div class="grid-cards">
+                <div class="stat-card summary glass text-center">
+                    <h4>Total Students</h4>
+                    <div class="value">{{ record.info.student_count }}</div>
+                </div>
+                <div class="stat-card summary glass text-center">
+                    <h4>Class Average</h4>
+                    <div class="value">{{ record.info.class_average }}</div>
+                </div>
+                <div class="stat-card summary glass text-center">
+                    <h4>Highest Scorer</h4>
+                    <div class="value" style="color: var(--success);">{{ record.info.highest_score }}</div>
+                </div>
+                <div class="stat-card summary glass text-center">
+                    <h4>Fail Count</h4>
+                    <div class="value" style="color: {% if record.info.fail_count > 0 %}var(--error){% else %}var(--success){% endif %};">{{ record.info.fail_count }}</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-grid">
+                <div class="chart-container glass">
+                    <h3 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 1rem;">Subject Averages</h3>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="chart-container glass">
+                    <h3 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 1rem;">Overall Grade Distribution</h3>
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="glass mt-4" style="padding: 1.5rem; border-radius: var(--radius-lg);">
+                <div class="filter-row no-pdf">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name or reg no..." style="flex: 2;">
+                    
+                    <select id="gradeFilter" class="form-control" style="flex: 1;">
+                        <option value="">All Grades</option>
+                        <option value="A+">A+</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="F">F</option>
+                    </select>
+
+                    <label style="display:flex; align-items:center; gap:0.5rem; white-space:nowrap;">
+                        <input type="checkbox" id="failFilter" style="width: auto;"> Show Failed
+                    </label>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="data-table" id="studentTable">
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Tamil</th>
+                                <th>English</th>
+                                <th>Maths</th>
+                                <th>Science</th>
+                                <th>Social</th>
+                                <th>Total</th>
+                                <th>Avg</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="no-pdf" id="pagination">
+                    <button class="btn btn-sm btn-secondary" id="prevPage" onclick="changePage(-1)">Prev</button>
+                    <span id="pageInfo" style="margin: 0 1rem; font-weight: 600;">Page 1 of 1</span>
+                    <button class="btn btn-sm btn-secondary" id="nextPage" onclick="changePage(1)">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Data bindings from Python Jinja
+            const studentData = {{ record.students | tojson | safe }};
+            const chartData = {{ record.charts | tojson | safe }};
+            
+            // --- Chart.js Configuration ---
+            Chart.defaults.color = '#a496c4';
+            Chart.defaults.font.family = 'Inter';
+
+            // Bar Chart (Subject Averages)
+            new Chart(document.getElementById('barChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: chartData.subjects,
+                    datasets: [{
+                        label: 'Average Score',
+                        data: chartData.averages,
+                        backgroundColor: 'rgba(138, 43, 226, 0.6)',
+                        borderColor: 'rgba(138, 43, 226, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Pie Chart (Grades)
+            new Chart(document.getElementById('pieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.grade_labels,
+                    datasets: [{
+                        data: chartData.grade_counts,
+                        backgroundColor: [
+                            'rgba(0, 210, 137, 0.8)', // A+
+                            'rgba(0, 210, 137, 0.5)', // A
+                            'rgba(138, 43, 226, 0.8)', // B
+                            'rgba(250, 219, 20, 0.8)', // C
+                            'rgba(255, 142, 143, 0.8)', // D
+                            'rgba(255, 77, 79, 0.8)'  // F
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+
+            // --- Javascript Data Table Logic ---
+            let currentPage = 1;
+            const rowsPerPage = 15;
+            let filteredData = studentData;
+
+            function renderTable() {
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const currentRows = filteredData.slice(start, end);
+                
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+                
+                if (currentRows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center">No students found matching filters.</td></tr>';
+                }
+
+                currentRows.forEach(student => {
+                    const gradeClass = student.grade.toLowerCase().replace('+', 'plus');
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${student.reg_no}</td>
+                            <td>${student.name}</td>
+                            <td>${student.tamil}</td>
+                            <td>${student.english}</td>
+                            <td>${student.maths}</td>
+                            <td>${student.science}</td>
+                            <td>${student.social_science}</td>
+                            <td class="highlight-val">${student.total}</td>
+                            <td class="highlight-val">${student.average}</td>
+                            <td><span class="badge badge-${gradeClass}">${student.grade}</span></td>
+                        </tr>
+                    `;
+                });
+
+                const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+                document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = currentPage === totalPages;
+            }
+
+            function changePage(dir) {
+                currentPage += dir;
+                renderTable();
+            }
+
+            // Filtering
+            function applyFilters() {
+                const searchTxt = document.getElementById('searchInput').value.toLowerCase();
+                const gradeTxt = document.getElementById('gradeFilter').value;
+                const failOnly = document.getElementById('failFilter').checked;
+
+                filteredData = studentData.filter(student => {
+                    const nameMatch = student.name.toLowerCase().includes(searchTxt);
+                    const regMatch = student.reg_no.toLowerCase().includes(searchTxt);
+                    const gMatch = gradeTxt ? student.grade === gradeTxt : true;
+                    const fMatch = failOnly ? student.grade === 'F' : true;
+                    
+                    return (nameMatch || regMatch) && gMatch && fMatch;
+                });
+                
+                currentPage = 1;
+                renderTable();
+            }
+
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('gradeFilter').addEventListener('change', applyFilters);
+            document.getElementById('failFilter').addEventListener('change', applyFilters);
+
+            // Initial render
+            renderTable();
+
+            // --- PDF Export Logic ---
+            function downloadPDF() {
+                // Temporarily disable elements with 'no-pdf' class
+                const noPdfElems = document.querySelectorAll('.no-pdf');
+                noPdfElems.forEach(el => el.style.display = 'none');
+
+                const element = document.getElementById('pdf-content');
+                
+                html2pdf().set({
+                    margin: 0.5,
+                    filename: 'Report_{{ record.info.filename }}.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#120b1f' },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                }).from(element).save().then(() => {
+                    // Restore elements
+                    noPdfElems.forEach(el => el.style.display = '');
+                });
+            }
+        </script>
+    {% endif %}
+</div>
+{% endblock %}

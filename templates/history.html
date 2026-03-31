@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="history-wrapper fade-in">
+    <div class="header-section">
+        <h2>Dashboard / Historical Uploads</h2>
+        <p class="subtitle">View and manage all previously processed batches.</p>
+    </div>
+
+    {% if records %}
+        <div class="grid-cards">
+            {% for rec in records %}
+                <div class="stat-card glass mb-3" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4>{{ rec.filename }}</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">
+                            Uploaded: {{ rec.created_at[:10] }} | Students: {{ rec.student_count }} | Avg: {{ rec.class_average }}
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="{{ url_for('view_record', record_id=rec.id) }}" class="btn btn-primary" style="padding: 0.5rem 1rem;">View Analytics</a>
+                        <form action="{{ url_for('delete_record', record_id=rec.id) }}" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 1rem; color: var(--error); border-color: rgba(255, 77, 79, 0.4);" onclick="return confirm('Are you sure you want to permanently delete this record?');">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state text-center glass" style="padding: 4rem; border-radius: var(--radius-lg);">
+            <h3>No Records Found</h3>
+            <p class="subtitle">There are no recent uploaded files available.</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">Upload New File</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

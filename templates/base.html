@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Result Analytics Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js and HTML2PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    {% if session.get('user_id') %}
+        <div class="app-layout">
+            <aside class="sidebar glass">
+                <div class="sidebar-header">
+                    <div class="nav-brand text-center">ResultPRO Analytics</div>
+                </div>
+                <nav class="sidebar-nav">
+                    <a href="{{ url_for('history') }}" class="nav-item">📊 Dashboard History</a>
+                    <a href="{{ url_for('dashboard') }}" class="nav-item">📤 Process New File</a>
+                </nav>
+                <div class="sidebar-footer">
+                    <div class="user-greeting text-center" style="margin-bottom: 10px; word-break: break-all;"><small>{{ session.get('email') }}</small></div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary w-100 text-center">Logout</a>
+                </div>
+            </aside>
+            <main class="main-content">
+                <div class="container-fluid">
+    {% else %}
+        <nav class="navbar relative-nav">
+            <div class="nav-brand">ResultProcessor PRO</div>
+            <div class="nav-links">
+                <a href="{{ url_for('login') }}" class="nav-item">Login</a>
+                <a href="{{ url_for('register') }}" class="nav-item btn-outline">Register</a>
+            </div>
+        </nav>
+        <main class="container">
+    {% endif %}
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-alert flash-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+    {% if session.get('user_id') %}
+                </div>
+            </main>
+        </div>
+    {% else %}
+        </main>
+    {% endif %}
+</body>
+</html>
