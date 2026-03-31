@@ -5,7 +5,7 @@
         <h2 class="text-center">Create Account</h2>
         <p class="text-center subtitle">Register to access the dashboard</p>
         
-        <form action="{{ url_for('register') }}" method="POST" class="auth-form">
+        <form id="registerForm" class="auth-form">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required placeholder="you@domain.com">
@@ -16,8 +16,51 @@
                 <input type="password" id="password" name="password" required placeholder="Secure password (at least 6 chars)">
             </div>
             
-            <button type="submit" class="btn btn-primary w-100">Register</button>
+            <button type="submit" id="submitBtn" class="btn btn-primary w-100">Register</button>
+            <div id="registerStatus" class="mt-3 text-center" style="display:none; color: var(--text-muted);">
+                <div class="loader-spinner mb-2" style="width: 30px; height: 30px;"></div>
+                <p>Creating account...</p>
+            </div>
         </form>
+
+        <script>
+            const registerForm = document.getElementById('registerForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const statusDiv = document.getElementById('registerStatus');
+
+            if (registerForm) {
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(registerForm);
+                    submitBtn.disabled = true;
+                    statusDiv.style.display = 'block';
+                    
+                    try {
+                        const response = await fetch("{{ url_for('api_register') }}", {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            alert(result.message);
+                            window.location.href = result.redirect_url;
+                        } else {
+                            alert("Registration Error: " + (result.error || "Failed to create account"));
+                            submitBtn.disabled = false;
+                            statusDiv.style.display = 'none';
+                        }
+                    } catch (err) {
+                        alert("An unexpected error occurred. Please check your internet connection.");
+                        console.error(err);
+                        submitBtn.disabled = false;
+                        statusDiv.style.display = 'none';
+                    }
+                });
+            }
+        </script>
         
         <p class="auth-footer text-center">
             Already have an account? <a href="{{ url_for('login') }}">Login here</a>

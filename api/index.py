@@ -76,43 +76,75 @@ def index():
         return redirect(url_for('history'))
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
 def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        if not email or not password:
-            flash('Email and password are required', 'error')
-            return render_template('login.html')
-            
-        try:
-            if not supabase:
-                raise ValueError("Database connection not available. Check environment variables.")
-                
-            response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            session['user_id'] = response.user.id
-            session['email'] = response.user.email
-            return redirect(url_for('history'))
-        except Exception as e:
-            logger.error(f"Login failure: {str(e)}")
-            flash(f'Login failed: {str(e)}', 'error')
-            
+    """Renders the login UI page."""
+    if 'user_id' in session:
+        return redirect(url_for('history'))
     return render_template('login.html')
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Backend auth logic for login. Always returns JSON."""
+    try:
+        # Support both JSON and Form data for flexibility
+        data = request.get_json() if request.is_json else request.form
+        email = data.get('email')
+        password = data.get('password')
+
+        if not email or not password:
+            return handle_api_error("Email and password are required.", 400)
+            
+        if not supabase:
+            return handle_api_error("Database connection not available. Check environment variables (SUPABASE_URL/KEY).", 500)
+            
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        
+        if not response.user:
+            return handle_api_error("Invalid credentials.", 401)
+            
+        # Set session
+        session['user_id'] = response.user.id
+        session['email'] = response.user.email
+        
+        return jsonify({
+            "success": True, 
+            "message": "Login successful",
+            "redirect_url": url_for('history')
+        })
+    except Exception as e:
+        logger.error(f"Login API Failure: {str(e)}", exc_info=True)
+        return handle_api_error(f"Authentication failed: {str(e)}", 401)
+
+@app.route('/register', methods=['GET'])
 def register():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        try:
-            if not supabase:
-                raise ValueError("Database connection not available.")
-            supabase.auth.sign_up({"email": email, "password": password})
-            flash('Registration successful. Please login.', 'success')
-            return redirect(url_for('login'))
-        except Exception as e:
-            flash(f'Registration failed: {str(e)}', 'error')
+    """Renders the registration UI page."""
     return render_template('register.html')
+
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """Backend logic for user registration. Always returns JSON."""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        email = data.get('email')
+        password = data.get('password')
+
+        if not email or not password:
+            return handle_api_error("Email and password are required.", 400)
+
+        if not supabase:
+            return handle_api_error("Database connection missing.", 500)
+
+        supabase.auth.sign_up({"email": email, "password": password})
+        
+        return jsonify({
+            "success": True, 
+            "message": "Registration successful. You can now log in.",
+            "redirect_url": url_for('login')
+        })
+    except Exception as e:
+        logger.error(f"Registration API Failure: {str(e)}", exc_info=True)
+        return handle_api_error(f"Registration failed: {str(e)}", 400)
 
 @app.route('/logout')
 def logout():
