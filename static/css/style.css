@@ -252,3 +252,18 @@ select.form-control {
     .auth-card { padding: 2rem 1.5rem; }
     .filter-row { flex-direction: column; }
 }
+
+/* Loader Spinner */
+.loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(138, 43, 226, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--purple-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

@@ -4,3 +4,4 @@ openpyxl
 werkzeug
 python-dotenv
 supabase
+gunicorn
